@@ -1,4 +1,4 @@
-use haoxue_dict::{Dictionary, DictEntry};
+use haoxue_dict::{DictEntry, Dictionary};
 use leptos::{component, create_signal, view, IntoView, SignalGet, SignalSet};
 use leptos_meta::*;
 

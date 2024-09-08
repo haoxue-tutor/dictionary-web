@@ -1,6 +1,6 @@
+use haoxue_dict::Dictionary;
 use leptos::*;
 use std::sync::Arc;
-use haoxue_dict::Dictionary;
 
 #[derive(Debug, Clone, Copy)]
 pub struct DictContext {
@@ -9,7 +9,9 @@ pub struct DictContext {
 
 impl Default for DictContext {
     fn default() -> Self {
-        Self { dict: create_rw_signal(None) }
+        Self {
+            dict: create_rw_signal(None),
+        }
     }
 }
 
