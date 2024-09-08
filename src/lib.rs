@@ -1,9 +1,11 @@
-use haoxue_dict::Dictionary;
-use leptos::{component, create_effect, create_signal, view, IntoView, SignalGet, SignalSet};
+use haoxue_dict::{Dictionary, DictEntry};
+use leptos::{component, create_signal, view, IntoView, SignalGet, SignalSet};
 use leptos_meta::*;
-use std::sync::Arc;
 
 use leptos::*;
+
+mod dict_context;
+use dict_context::DictContext;
 
 #[component]
 pub fn InputField(
@@ -26,7 +28,14 @@ pub fn WordList(#[prop(into)] words: Signal<String>) -> impl IntoView {
     view! {
         <ul>
             <For
-                each=move || { words.get().split_whitespace().map(ToString::to_string).collect::<Vec<String>>() }
+                each=move || {
+                    let dict = DictContext::use_context().get();
+                    if let Some(dict) = dict {
+                        dict.segment(&words.get()).into_iter().map(|x| x.right_or_else(DictEntry::simplified).to_string()).collect::<Vec<_>>()
+                    } else {
+                        words.get().split_whitespace().map(ToString::to_string).collect::<Vec<String>>()
+                    }
+                }
                 key=|word| word.to_string()
                 let:word
             >
@@ -38,9 +47,9 @@ pub fn WordList(#[prop(into)] words: Signal<String>) -> impl IntoView {
 
 #[component]
 pub fn Dictionary() -> impl IntoView {
-    let (input, set_input) = create_signal(String::new());
+    let (input, set_input) = create_signal(String::from("我忘记带钥匙了。"));
 
-    let dict = use_context::<DictContext>().unwrap();
+    let dict = DictContext::use_context();
 
     view! {
         <div>
@@ -66,36 +75,13 @@ pub fn Dictionary() -> impl IntoView {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
-struct DictContext {
-    dict: ReadSignal<Option<Arc<Dictionary>>>,
-    set_dict: WriteSignal<Option<Arc<Dictionary>>>,
-}
-
-impl Default for DictContext {
-    fn default() -> Self {
-        let (dict, set_dict) = create_signal(None);
-        Self { dict, set_dict }
-    }
-}
-
-impl DictContext {
-    fn get(&self) -> Option<Arc<Dictionary>> {
-        self.dict.get()
-    }
-
-    fn set(&self, dict: Dictionary) {
-        self.set_dict.set(Some(Arc::new(dict)));
-    }
-}
-
 #[component]
 pub fn FileDownloader() -> impl IntoView {
     use futures_util::StreamExt;
     let (progress, set_progress) = create_signal(0.0);
     let (is_downloading, set_is_downloading) = create_signal(false);
 
-    let dict = use_context::<DictContext>().unwrap();
+    let dict = DictContext::use_context();
 
     let download = move |_| {
         set_is_downloading.set(true);
@@ -135,12 +121,15 @@ pub fn FileDownloader() -> impl IntoView {
                 String::new()
             });
 
+            let url = "https://assets.lemmih.org/SUBTLEX-CH-WF.utf8.txt";
+            let subtlex_content = reqwest::get(url).await.unwrap().text().await.unwrap();
+
             use instant::Instant;
 
             let start_time = Instant::now();
             let new_dict = Dictionary::new_from_reader(
                 std::io::Cursor::new(file_content),
-                std::io::Cursor::new("".to_string()),
+                std::io::Cursor::new(subtlex_content),
             );
             let duration = start_time.elapsed();
             log::info!("Time taken to create dictionary: {:.2?}", duration);
@@ -174,7 +163,7 @@ pub fn FileDownloader() -> impl IntoView {
 pub fn App() -> impl IntoView {
     provide_meta_context();
 
-    provide_context(DictContext::default());
+    DictContext::provide_context();
 
     view! {
         <Stylesheet href="/pkg/style.css" />
