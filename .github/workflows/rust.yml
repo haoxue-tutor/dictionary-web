@@ -16,6 +16,9 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+    - name: Setup environment
+      run: |
+        mkdir pkg
     - name: Format
       run: cargo fmt --check --verbose
     - name: Clippy SSR

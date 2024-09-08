@@ -65,9 +65,9 @@ pub fn Dictionary() -> impl IntoView {
                 {move || {
                     let dict = dict.get();
                     if dict.is_none() {
-                        "The dictionary is empty.".to_string()
+                        "The dictionary is empty."
                     } else {
-                        format!("Dictionary available")
+                        "Dictionary available"
                     }
                 }}
             </p>
