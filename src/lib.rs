@@ -1,16 +1,187 @@
-use leptos::{
-    component, view, IntoView,
-};
+use haoxue_dict::Dictionary;
+use leptos::{component, create_effect, create_signal, view, IntoView, SignalGet, SignalSet};
 use leptos_meta::*;
+use std::sync::Arc;
 
+use leptos::*;
+
+#[component]
+pub fn InputField(
+    #[prop(into)] value: Signal<String>,
+    #[prop(into)] set_value: WriteSignal<String>,
+) -> impl IntoView {
+    view! {
+        <input
+            type="text"
+            value=value
+            on:input=move |ev| {
+                set_value.set(event_target_value(&ev));
+            }
+        />
+    }
+}
+
+#[component]
+pub fn WordList(#[prop(into)] words: Signal<String>) -> impl IntoView {
+    view! {
+        <ul>
+            <For
+                each=move || { words.get().split_whitespace().map(ToString::to_string).collect::<Vec<String>>() }
+                key=|word| word.to_string()
+                let:word
+            >
+                <li>{word}</li>
+            </For>
+        </ul>
+    }
+}
+
+#[component]
+pub fn Dictionary() -> impl IntoView {
+    let (input, set_input) = create_signal(String::new());
+
+    let dict = use_context::<DictContext>().unwrap();
+
+    view! {
+        <div>
+            <h2>"Dictionary"</h2>
+            <InputField
+                value=input
+                set_value=set_input
+            />
+            <WordList
+                words=input
+            />
+            <p>
+                {move || {
+                    let dict = dict.get();
+                    if dict.is_none() {
+                        "The dictionary is empty.".to_string()
+                    } else {
+                        format!("Dictionary available")
+                    }
+                }}
+            </p>
+        </div>
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+struct DictContext {
+    dict: ReadSignal<Option<Arc<Dictionary>>>,
+    set_dict: WriteSignal<Option<Arc<Dictionary>>>,
+}
+
+impl Default for DictContext {
+    fn default() -> Self {
+        let (dict, set_dict) = create_signal(None);
+        Self { dict, set_dict }
+    }
+}
+
+impl DictContext {
+    fn get(&self) -> Option<Arc<Dictionary>> {
+        self.dict.get()
+    }
+
+    fn set(&self, dict: Dictionary) {
+        self.set_dict.set(Some(Arc::new(dict)));
+    }
+}
+
+#[component]
+pub fn FileDownloader() -> impl IntoView {
+    use futures_util::StreamExt;
+    let (progress, set_progress) = create_signal(0.0);
+    let (is_downloading, set_is_downloading) = create_signal(false);
+
+    let dict = use_context::<DictContext>().unwrap();
+
+    let download = move |_| {
+        set_is_downloading.set(true);
+        wasm_bindgen_futures::spawn_local(async move {
+            // let url = "https://github.com/haoxue-tutor/haoxue-dict/raw/main/data/cedict-2024-06-07.txt"; // Replace with your file URL
+            let url = "https://assets.lemmih.org/cedict-2024-06-07.txt";
+            let client = reqwest::Client::new();
+            let response = client.get(url).send().await.unwrap();
+
+            let total_size = response
+                .headers()
+                .get(reqwest::header::CONTENT_LENGTH)
+                .and_then(|cl| cl.to_str().ok())
+                .and_then(|cl| cl.parse::<f64>().ok())
+                .unwrap_or(0.0);
+
+            let mut received = 0.0;
+            let mut buffer = Vec::with_capacity(total_size as usize);
+
+            let mut stream = response.bytes_stream();
+            while let Some(chunk) = stream.next().await {
+                let chunk = chunk.unwrap();
+                received += chunk.len() as f64;
+                buffer.extend_from_slice(&chunk);
+                set_progress.set((received / total_size) * 100.0);
+            }
+
+            set_is_downloading.set(false);
+            log::info!(
+                "File download completed successfully! Total size: {:.2} MB",
+                received / (1024.0 * 1024.0)
+            );
+
+            // Convert the received data to a string
+            let file_content = String::from_utf8(buffer).unwrap_or_else(|_| {
+                log::error!("Failed to convert file content to UTF-8");
+                String::new()
+            });
+
+            use instant::Instant;
+
+            let start_time = Instant::now();
+            let new_dict = Dictionary::new_from_reader(
+                std::io::Cursor::new(file_content),
+                std::io::Cursor::new("".to_string()),
+            );
+            let duration = start_time.elapsed();
+            log::info!("Time taken to create dictionary: {:.2?}", duration);
+            dict.set(new_dict);
+        });
+    };
+
+    view! {
+        <div>
+            <button
+                on:click=download
+                disabled=is_downloading
+            >
+                "Download Large File"
+            </button>
+            {move || if is_downloading.get() {
+                view! {
+                    <div>
+                        <progress value=progress max="100"></progress>
+                    </div>
+                    <div>{move || format!("{:.1}%", progress.get())}</div>
+                }.into_view()
+            } else {
+                view! { <p>"Click to start download"</p> }.into_view()
+            }}
+        </div>
+    }
+}
 
 #[component]
 pub fn App() -> impl IntoView {
     provide_meta_context();
+
+    provide_context(DictContext::default());
+
     view! {
         <Stylesheet href="/pkg/style.css" />
         <Link rel="icon" type_="image/x-icon" href="/pkg/favicon.ico" />
-        <p>Dictionary app</p>
+        <p>"Dictionary app"</p>
+        <FileDownloader />
+        <Dictionary />
     }
 }
 
