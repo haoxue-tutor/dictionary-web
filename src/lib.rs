@@ -19,6 +19,7 @@ pub fn InputField(
             on:input=move |ev| {
                 set_value.set(event_target_value(&ev));
             }
+            class="w-full mx-2 my-1 px-2 py-1 border border-gray-300"
         />
     }
 }
