@@ -64,49 +64,19 @@ pub fn WordList(#[prop(into)] words: Signal<String>) -> impl IntoView {
 
 #[component]
 pub fn Translation(#[prop(into)] input: Signal<String>) -> impl IntoView {
-    // let (get_translation, set_translation) = create_signal(String::default());
     let translation = create_local_resource(
         move || input.get(),
         |text| async move {
-            let ret = llm::query_openai(format!("\
-            Do not respond with any commentary. Do not greet the user. If you are unsure how to reply, simply say nothing. \
-            If the given Chinese text is empty, reply with nothing. Do not include quotation marks. \
-            Reply with translation of this Chinese sentence: \"{}\"", text)).await;
-            match ret {
-                Ok(response) => response.choices.first().map_or_else(
-                    || "No response received.".to_string(),
-                    |choice| choice.message.content.clone().unwrap_or_default(),
-                ),
-                Err(_) => "Error querying OpenAI for translation.".to_string(),
-            }
+            llm::translate(text).await.unwrap_or_else(|err| format!("Error querying AI for translation: {err:?}"))
         },
     );
-    // let _ = leptos_use::watch_throttled(
-    //     move || input.get(),
-    //     move |text, _, _| {
-    //         let query = format!("\
-    //     Do not respond with any commentary. Do not greet the user. If you are unsure how to reply, simply say nothing. \
-    //     If the given Chinese text is empty, reply with nothing. Do not include quotation marks. \
-    //     Reply with translation of this Chinese sentence: \"{}\"", text);
-    //         spawn_local(async move {
-    //             let ret = llm::query_openai(query).await;
-    //             set_translation.set(match ret {
-    //                 Ok(response) => response.choices.first().map_or_else(
-    //                     || "No response received.".to_string(),
-    //                     |choice| choice.message.content.clone().unwrap_or_default(),
-    //                 ),
-    //                 Err(_) => "Error querying OpenAI for translation.".to_string(),
-    //             })
-    //         })
-    //     },
-    //     1000_f64,
-    // );
 
     view! {
         <div>
-            <Suspense fallback=move || view! { <p> Translating... <span class:loader=true></span></p> }.into_view()>
-                <p>{translation.get()}</p>
-            </Suspense>
+            <p>
+                {move || translation.get()}
+                {move || view!{ <span class:loader=translation.loading().get()></span> }}
+            </p>
         </div>
     }
 }

@@ -621,6 +621,7 @@ dependencies = [
  "console_error_panic_hook",
  "console_log",
  "futures-util",
+ "gloo-timers",
  "haoxue-dict",
  "http",
  "include_dir",
