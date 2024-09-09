@@ -1,4 +1,4 @@
-use haoxue_dict::{DictEntry, Dictionary};
+use haoxue_dict::DictEntry;
 use leptos::{component, create_signal, view, IntoView, SignalGet, SignalSet};
 use leptos_meta::*;
 
@@ -32,15 +32,28 @@ pub fn WordList(#[prop(into)] words: Signal<String>) -> impl IntoView {
                 each=move || {
                     let dict = DictContext::use_context().get();
                     if let Some(dict) = dict {
-                        dict.segment(&words.get()).into_iter().map(|x| x.right_or_else(DictEntry::simplified).to_string()).collect::<Vec<_>>()
+                        dict.segment(&words.get()).into_iter().map(|either| either.right_or_else(DictEntry::simplified).to_string()).collect::<Vec<_>>()
                     } else {
-                        words.get().split_whitespace().map(ToString::to_string).collect::<Vec<String>>()
+                        vec![] //words.get().split_whitespace().map(ToString::to_string).collect::<Vec<String>>()
                     }
                 }
-                key=|word| word.to_string()
+                key=|word| word.clone()
                 let:word
             >
-                <li>{word}</li>
+                <li>{{
+                    let dict = DictContext::use_context().get();
+                    if let Some(dict) = dict {
+                        // view! { {word} }
+                        if let Some(entry) = dict.get_entry(&word) {
+                            view! { {word} {entry.definitions().next().unwrap_or_default().to_string()} }.into_view()
+                        } else {
+                            view! { {word} }.into_view()
+                        }
+                    } else {
+                        view! { {word} }.into_view()
+                    }
+                    }}
+                </li>
             </For>
         </ul>
     }
@@ -50,11 +63,8 @@ pub fn WordList(#[prop(into)] words: Signal<String>) -> impl IntoView {
 pub fn Dictionary() -> impl IntoView {
     let (input, set_input) = create_signal(String::from("我忘记带钥匙了。"));
 
-    let dict = DictContext::use_context();
-
     view! {
         <div>
-            <h2>"Dictionary"</h2>
             <InputField
                 value=input
                 set_value=set_input
@@ -62,101 +72,23 @@ pub fn Dictionary() -> impl IntoView {
             <WordList
                 words=input
             />
-            <p>
-                {move || {
-                    let dict = dict.get();
-                    if dict.is_none() {
-                        "The dictionary is empty."
-                    } else {
-                        "Dictionary available"
-                    }
-                }}
-            </p>
         </div>
     }
 }
 
 #[component]
 pub fn FileDownloader() -> impl IntoView {
-    use futures_util::StreamExt;
-    let (progress, set_progress) = create_signal(0.0);
-    let (is_downloading, set_is_downloading) = create_signal(false);
-
     let dict = DictContext::use_context();
 
-    let download = move |_| {
-        set_is_downloading.set(true);
-        wasm_bindgen_futures::spawn_local(async move {
-            // let url = "https://github.com/haoxue-tutor/haoxue-dict/raw/main/data/cedict-2024-06-07.txt"; // Replace with your file URL
-            let url = "https://assets.lemmih.org/cedict-2024-06-07.txt";
-            let client = reqwest::Client::new();
-            let response = client.get(url).send().await.unwrap();
-
-            let total_size = response
-                .headers()
-                .get(reqwest::header::CONTENT_LENGTH)
-                .and_then(|cl| cl.to_str().ok())
-                .and_then(|cl| cl.parse::<f64>().ok())
-                .unwrap_or(0.0);
-
-            let mut received = 0.0;
-            let mut buffer = Vec::with_capacity(total_size as usize);
-
-            let mut stream = response.bytes_stream();
-            while let Some(chunk) = stream.next().await {
-                let chunk = chunk.unwrap();
-                received += chunk.len() as f64;
-                buffer.extend_from_slice(&chunk);
-                set_progress.set((received / total_size) * 100.0);
-            }
-
-            set_is_downloading.set(false);
-            log::info!(
-                "File download completed successfully! Total size: {:.2} MB",
-                received / (1024.0 * 1024.0)
-            );
-
-            // Convert the received data to a string
-            let file_content = String::from_utf8(buffer).unwrap_or_else(|_| {
-                log::error!("Failed to convert file content to UTF-8");
-                String::new()
-            });
-
-            let url = "https://assets.lemmih.org/SUBTLEX-CH-WF.utf8.txt";
-            let subtlex_content = reqwest::get(url).await.unwrap().text().await.unwrap();
-
-            use instant::Instant;
-
-            let start_time = Instant::now();
-            let new_dict = Dictionary::new_from_reader(
-                std::io::Cursor::new(file_content),
-                std::io::Cursor::new(subtlex_content),
-            );
-            let duration = start_time.elapsed();
-            log::info!("Time taken to create dictionary: {:.2?}", duration);
-            dict.set(new_dict);
-        });
-    };
-
     view! {
+        <Suspense fallback=move || view! { <p> Please wait, loading dictionary <span class:loader=true></span></p> }.into_view()>
         <div>
-            <button
-                on:click=download
-                disabled=is_downloading
-            >
-                "Download Large File"
-            </button>
-            {move || if is_downloading.get() {
-                view! {
-                    <div>
-                        <progress value=progress max="100"></progress>
-                    </div>
-                    <div>{move || format!("{:.1}%", progress.get())}</div>
-                }.into_view()
-            } else {
-                view! { <p>"Click to start download"</p> }.into_view()
+            {move || {
+                let _ = dict.get();
+                view! { }
             }}
         </div>
+        </Suspense>
     }
 }
 
@@ -169,7 +101,7 @@ pub fn App() -> impl IntoView {
     view! {
         <Stylesheet href="/pkg/style.css" />
         <Link rel="icon" type_="image/x-icon" href="/pkg/favicon.ico" />
-        <p>"Dictionary app"</p>
+        <h1 class="text-4xl font-bold text-center my-6">"Chinese to English Dictionary"</h1>
         <FileDownloader />
         <Dictionary />
     }
