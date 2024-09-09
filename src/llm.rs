@@ -1,11 +1,4 @@
-use async_openai_wasm::{
-    config::OpenAIConfig,
-    types::{
-        ChatCompletionRequestUserMessageArgs,
-        CreateChatCompletionRequestArgs, CreateChatCompletionResponse,
-    },
-    Client,
-};
+use async_openai_wasm::types::CreateChatCompletionResponse;
 use leptos::*;
 #[cfg(feature = "ssr")]
 use std::sync::OnceLock;
@@ -20,6 +13,12 @@ pub fn set_api_key(api_key: String) {
 
 #[server]
 pub async fn query_openai(prompt: String) -> Result<CreateChatCompletionResponse, ServerFnError> {
+    use async_openai_wasm::{
+        config::OpenAIConfig,
+        types::{ChatCompletionRequestUserMessageArgs, CreateChatCompletionRequestArgs},
+        Client,
+    };
+
     use send_wrapper::SendWrapper;
 
     SendWrapper::new(async move {
