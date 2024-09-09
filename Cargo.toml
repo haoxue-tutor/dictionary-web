@@ -32,6 +32,10 @@ futures-util = "0.3.30"
 web-sys = { version = "0.3.70", features = ["Storage", "Navigator", "StorageManager"] }
 haoxue-dict = { version = "0.1.7", default-features = false }
 instant = { version = "0.1.13", features = ["wasm-bindgen"] }
+async-openai-wasm = "0.24.0"
+serde_json = "1.0.128"
+send_wrapper = "0.6.0"
+leptos-use = { version = "0.13.4", features = ["watch_throttled"] }
 
 [features]
 hydrate = ["leptos/hydrate", "leptos_meta/hydrate", "leptos_router/hydrate"]

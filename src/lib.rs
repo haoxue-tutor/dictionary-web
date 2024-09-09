@@ -3,9 +3,12 @@ use leptos::{component, create_signal, view, IntoView, SignalGet, SignalSet};
 use leptos_meta::*;
 
 use leptos::*;
+use leptos_use::*;
 
 mod dict_context;
 use dict_context::DictContext;
+
+mod llm;
 
 #[component]
 pub fn InputField(
@@ -60,8 +63,58 @@ pub fn WordList(#[prop(into)] words: Signal<String>) -> impl IntoView {
 }
 
 #[component]
+pub fn Translation(#[prop(into)] input: Signal<String>) -> impl IntoView {
+    // let (get_translation, set_translation) = create_signal(String::default());
+    let translation = create_local_resource(
+        move || input.get(),
+        |text| async move {
+            let ret = llm::query_openai(format!("\
+            Do not respond with any commentary. Do not greet the user. If you are unsure how to reply, simply say nothing. \
+            If the given Chinese text is empty, reply with nothing. Do not include quotation marks. \
+            Reply with translation of this Chinese sentence: \"{}\"", text)).await;
+            match ret {
+                Ok(response) => response.choices.first().map_or_else(
+                    || "No response received.".to_string(),
+                    |choice| choice.message.content.clone().unwrap_or_default(),
+                ),
+                Err(_) => "Error querying OpenAI for translation.".to_string(),
+            }
+        },
+    );
+    // let _ = leptos_use::watch_throttled(
+    //     move || input.get(),
+    //     move |text, _, _| {
+    //         let query = format!("\
+    //     Do not respond with any commentary. Do not greet the user. If you are unsure how to reply, simply say nothing. \
+    //     If the given Chinese text is empty, reply with nothing. Do not include quotation marks. \
+    //     Reply with translation of this Chinese sentence: \"{}\"", text);
+    //         spawn_local(async move {
+    //             let ret = llm::query_openai(query).await;
+    //             set_translation.set(match ret {
+    //                 Ok(response) => response.choices.first().map_or_else(
+    //                     || "No response received.".to_string(),
+    //                     |choice| choice.message.content.clone().unwrap_or_default(),
+    //                 ),
+    //                 Err(_) => "Error querying OpenAI for translation.".to_string(),
+    //             })
+    //         })
+    //     },
+    //     1000_f64,
+    // );
+
+    view! {
+        <div>
+            <Suspense fallback=move || view! { <p> Translating... <span class:loader=true></span></p> }.into_view()>
+                <p>{translation.get()}</p>
+            </Suspense>
+        </div>
+    }
+}
+
+#[component]
 pub fn Dictionary() -> impl IntoView {
     let (input, set_input) = create_signal(String::from("我忘记带钥匙了。"));
+    let input_throttled = signal_throttled(input, 2000.0);
 
     view! {
         <div>
@@ -69,6 +122,7 @@ pub fn Dictionary() -> impl IntoView {
                 value=input
                 set_value=set_input
             />
+            <Translation input=input_throttled/>
             <WordList
                 words=input
             />
@@ -117,7 +171,7 @@ pub fn hydrate() {
 
 #[cfg(feature = "ssr")]
 mod ssr_imports {
-    use crate::App;
+    use crate::{llm, App};
     use axum::http::{HeaderValue, StatusCode};
     use axum::{
         extract::Path,
@@ -163,19 +217,24 @@ mod ssr_imports {
 
     #[event(start)]
     fn register() {
-        // No server functions to register
+        server_fn::axum::register_explicit::<llm::QueryOpenai>();
     }
 
     #[event(fetch)]
     async fn fetch(
         req: HttpRequest,
-        _env: Env,
+        env: Env,
         _ctx: Context,
     ) -> Result<axum::http::Response<axum::body::Body>> {
         _ = console_log::init_with_level(log::Level::Debug);
         use tower_service::Service;
 
         console_error_panic_hook::set_once();
+
+        let api_key = env
+            .secret("OPENAI_API_KEY")
+            .expect("OPENAI_API_KEY must be set");
+        llm::set_api_key(api_key.to_string());
 
         Ok(router().call(req).await?)
     }
