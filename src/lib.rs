@@ -80,8 +80,7 @@ pub fn Translation(#[prop(into)] input: Signal<String>) -> impl IntoView {
     view! {
         <div>
             <p>
-                {move || translation.get()}
-                {move || view! { <span class:loader=translation.loading().get()></span> }}
+                {move || translation.get()} {move || view! { <span class:loader=translation.loading().get()></span> }}
             </p>
         </div>
     }
@@ -101,8 +100,7 @@ pub fn Pinyin(#[prop(into)] input: Signal<String>) -> impl IntoView {
     view! {
         <div>
             <p>
-                {move || translation.get()}
-                {move || view! { <span class:loader=translation.loading().get()></span> }}
+                {move || translation.get()} {move || view! { <span class:loader=translation.loading().get()></span> }}
             </p>
         </div>
     }
@@ -139,8 +137,7 @@ pub fn FileDownloader() -> impl IntoView {
 
     view! {
         <Suspense fallback=move || {
-            view! { <p>Please wait, loading dictionary <span class:loader=true></span></p> }
-                .into_view()
+            view! { <p>Please wait, loading dictionary <span class:loader=true></span></p> }.into_view()
         }>
             <div>
                 {move || {
