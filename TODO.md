@@ -1,5 +1,4 @@
 - Stream translation response?
-- Generate Pinyin.
 - Allow Pinyin and English to be edited.
 - Toggle light-dark mode.
 - Write tool that uploads everything in pkg/ to CF KV. Then a manifest can be
