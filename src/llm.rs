@@ -63,12 +63,34 @@ pub async fn translate(chinese: String) -> Result<String, ServerFnError> {
             ("你需要哪本书？".into(), "Which book do you need?".into()),
             (
                 "这只苹果有半公斤。".into(),
-                "Zhè zhī píngguǒ yǒu bàn gōngjīn.".into(),
+                "This apple weighs half a kilogram.".into(),
             ),
             ("".into(), "".into()),
             (
                 "她正在打电话。".into(),
                 "She is making a phone call.".into(),
+            ),
+        ],
+        chinese,
+    )
+    .await
+}
+
+// Chinese to Pinyin translation
+pub async fn chinese_to_pinyin(chinese: String) -> Result<String, ServerFnError> {
+    query_openai(
+        "You are a Chinese to Pinyin translation system. You will respond only with Pinyin translations."
+            .to_string(),
+        vec![
+            ("你需要哪本书？".into(), "Nǐ xūyào nǎ běn shū?".into()),
+            (
+                "这只苹果有半公斤。".into(),
+                "Zhè zhī píngguǒ yǒu bàn gōngjīn.".into(),
+            ),
+            ("".into(), "".into()),
+            (
+                "她正在打电话。".into(),
+                "Tā zhèngzài dǎ diànhuà.".into(),
             ),
         ],
         chinese,

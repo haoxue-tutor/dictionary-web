@@ -82,21 +82,51 @@ pub fn Translation(#[prop(into)] input: Signal<String>) -> impl IntoView {
 }
 
 #[component]
+pub fn Pinyin(#[prop(into)] input: Signal<String>) -> impl IntoView {
+    let translation = create_local_resource(
+        move || input.get(),
+        |text| async move {
+            llm::chinese_to_pinyin(text).await.unwrap_or_else(|err| format!("Error querying AI for translation: {err:?}"))
+        },
+    );
+
+    view! {
+        <div>
+            <p>
+                {move || translation.get()}
+                {move || view!{ <span class:loader=translation.loading().get()></span> }}
+            </p>
+        </div>
+    }
+}
+
+#[component]
 pub fn Dictionary() -> impl IntoView {
     let (input, set_input) = create_signal(String::from("我忘记带钥匙了。"));
     let input_throttled = signal_throttled(input, 2000.0);
 
     view! {
-        <div>
+        <fieldset class="border border-black border-dashed p-2">
+            <legend>Chinese</legend>
             <InputField
                 value=input
                 set_value=set_input
             />
+        </fieldset>
+        <fieldset class="border border-black border-dashed p-2">
+            <legend>Pinyin</legend>
+            <Pinyin input=input_throttled/>
+        </fieldset>
+        <fieldset class="border border-black border-dashed p-2">
+            <legend>English</legend>
             <Translation input=input_throttled/>
+        </fieldset>
+        <fieldset class="border border-black border-dashed p-2">
+            <legend>Words</legend>
             <WordList
                 words=input
             />
-        </div>
+        </fieldset>
     }
 }
 
@@ -106,12 +136,12 @@ pub fn FileDownloader() -> impl IntoView {
 
     view! {
         <Suspense fallback=move || view! { <p> Please wait, loading dictionary <span class:loader=true></span></p> }.into_view()>
-        <div>
-            {move || {
-                let _ = dict.get();
-                view! { }
-            }}
-        </div>
+            <div>
+                {move || {
+                    let _ = dict.get();
+                    view! { }
+                }}
+            </div>
         </Suspense>
     }
 }
@@ -126,8 +156,10 @@ pub fn App() -> impl IntoView {
         <Stylesheet href="/pkg/style.css" />
         <Link rel="icon" type_="image/x-icon" href="/pkg/favicon.ico" />
         <h1 class="text-4xl font-bold text-center my-6">"Chinese to English Dictionary"</h1>
-        <FileDownloader />
-        <Dictionary />
+        <div class="max-w-2xl mx-auto">
+            <FileDownloader />
+            <Dictionary />
+        </div>
     }
 }
 
