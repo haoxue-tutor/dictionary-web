@@ -67,7 +67,9 @@ pub fn Translation(#[prop(into)] input: Signal<String>) -> impl IntoView {
     let translation = create_local_resource(
         move || input.get(),
         |text| async move {
-            llm::translate(text).await.unwrap_or_else(|err| format!("Error querying AI for translation: {err:?}"))
+            llm::translate(text)
+                .await
+                .unwrap_or_else(|err| format!("Error querying AI for translation: {err:?}"))
         },
     );
 
@@ -86,7 +88,9 @@ pub fn Pinyin(#[prop(into)] input: Signal<String>) -> impl IntoView {
     let translation = create_local_resource(
         move || input.get(),
         |text| async move {
-            llm::chinese_to_pinyin(text).await.unwrap_or_else(|err| format!("Error querying AI for translation: {err:?}"))
+            llm::chinese_to_pinyin(text)
+                .await
+                .unwrap_or_else(|err| format!("Error querying AI for translation: {err:?}"))
         },
     );
 
