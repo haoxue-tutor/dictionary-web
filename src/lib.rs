@@ -32,26 +32,33 @@ pub fn WordList(#[prop(into)] words: Signal<String>) -> impl IntoView {
                 each=move || {
                     let dict = DictContext::use_context().get();
                     if let Some(dict) = dict {
-                        dict.segment(&words.get()).into_iter().map(|either| either.right_or_else(DictEntry::simplified).to_string()).collect::<Vec<_>>()
+                        dict.segment(&words.get())
+                            .into_iter()
+                            .map(|either| either.right_or_else(DictEntry::simplified).to_string())
+                            .collect::<Vec<_>>()
                     } else {
-                        vec![] //words.get().split_whitespace().map(ToString::to_string).collect::<Vec<String>>()
+                        vec![]
                     }
                 }
                 key=|word| word.clone()
                 let:word
             >
-                <li>{{
-                    let dict = DictContext::use_context().get();
-                    if let Some(dict) = dict {
-                        // view! { {word} }
-                        if let Some(entry) = dict.get_entry(&word) {
-                            view! { {word} {entry.definitions().next().unwrap_or_default().to_string()} }.into_view()
+                <li>
+                    {{
+                        let dict = DictContext::use_context().get();
+                        if let Some(dict) = dict {
+                            if let Some(entry) = dict.get_entry(&word) {
+                                view! {
+                                    {word}
+                                    {entry.definitions().next().unwrap_or_default().to_string()}
+                                }
+                                    .into_view()
+                            } else {
+                                view! { {word} }.into_view()
+                            }
                         } else {
                             view! { {word} }.into_view()
                         }
-                    } else {
-                        view! { {word} }.into_view()
-                    }
                     }}
                 </li>
             </For>
@@ -74,7 +81,7 @@ pub fn Translation(#[prop(into)] input: Signal<String>) -> impl IntoView {
         <div>
             <p>
                 {move || translation.get()}
-                {move || view!{ <span class:loader=translation.loading().get()></span> }}
+                {move || view! { <span class:loader=translation.loading().get()></span> }}
             </p>
         </div>
     }
@@ -95,7 +102,7 @@ pub fn Pinyin(#[prop(into)] input: Signal<String>) -> impl IntoView {
         <div>
             <p>
                 {move || translation.get()}
-                {move || view!{ <span class:loader=translation.loading().get()></span> }}
+                {move || view! { <span class:loader=translation.loading().get()></span> }}
             </p>
         </div>
     }
@@ -109,24 +116,19 @@ pub fn Dictionary() -> impl IntoView {
     view! {
         <fieldset class="border border-black border-dashed p-2">
             <legend>Chinese</legend>
-            <InputField
-                value=input
-                set_value=set_input
-            />
+            <InputField value=input set_value=set_input />
         </fieldset>
         <fieldset class="border border-black border-dashed p-2">
             <legend>Pinyin</legend>
-            <Pinyin input=input_throttled/>
+            <Pinyin input=input_throttled />
         </fieldset>
         <fieldset class="border border-black border-dashed p-2">
             <legend>English</legend>
-            <Translation input=input_throttled/>
+            <Translation input=input_throttled />
         </fieldset>
         <fieldset class="border border-black border-dashed p-2">
             <legend>Words</legend>
-            <WordList
-                words=input
-            />
+            <WordList words=input />
         </fieldset>
     }
 }
@@ -136,11 +138,14 @@ pub fn FileDownloader() -> impl IntoView {
     let dict = DictContext::use_context();
 
     view! {
-        <Suspense fallback=move || view! { <p> Please wait, loading dictionary <span class:loader=true></span></p> }.into_view()>
+        <Suspense fallback=move || {
+            view! { <p>Please wait, loading dictionary <span class:loader=true></span></p> }
+                .into_view()
+        }>
             <div>
                 {move || {
                     let _ = dict.get();
-                    view! { }
+                    view! {}
                 }}
             </div>
         </Suspense>
