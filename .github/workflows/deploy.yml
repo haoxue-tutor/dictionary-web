@@ -33,6 +33,13 @@ jobs:
     - name: Install worker-build
       run: cargo install --locked worker-build
 
+    - name: Check API Token
+      run: |
+        if [ -z "${{ secrets.CF_API_TOKEN }}" ]; then
+          echo "Error: CF_API_TOKEN is not set."
+          exit 1
+        fi
+
     - name: Dry Run
       if: github.ref != 'refs/heads/main'
       uses: cloudflare/wrangler-action@v3
