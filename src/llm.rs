@@ -55,21 +55,14 @@ pub async fn query_openai(
 }
 
 // Chinese to English translation
-pub async fn translate(chinese: String) -> Result<String, ServerFnError> {
+pub async fn chinese_to_english(chinese: String) -> Result<String, ServerFnError> {
     query_openai(
-        "You are a Chinese to English translation system. You will respond only with translations."
-            .to_string(),
+        "You are a Chinese to English translation system. You will respond only with translations.".to_string(),
         vec![
             ("你需要哪本书？".into(), "Which book do you need?".into()),
-            (
-                "这只苹果有半公斤。".into(),
-                "This apple weighs half a kilogram.".into(),
-            ),
+            ("这只苹果有半公斤。".into(), "This apple weighs half a kilogram.".into()),
             ("".into(), "".into()),
-            (
-                "她正在打电话。".into(),
-                "She is making a phone call.".into(),
-            ),
+            ("她正在打电话。".into(), "She is making a phone call.".into()),
         ],
         chinese,
     )
@@ -79,19 +72,12 @@ pub async fn translate(chinese: String) -> Result<String, ServerFnError> {
 // Chinese to Pinyin translation
 pub async fn chinese_to_pinyin(chinese: String) -> Result<String, ServerFnError> {
     query_openai(
-        "You are a Chinese to Pinyin translation system. You will respond only with Pinyin translations."
-            .to_string(),
+        "You are a Chinese to Pinyin translation system. You will respond only with Pinyin translations.".to_string(),
         vec![
             ("你需要哪本书？".into(), "Nǐ xūyào nǎ běn shū?".into()),
-            (
-                "这只苹果有半公斤。".into(),
-                "Zhè zhī píngguǒ yǒu bàn gōngjīn.".into(),
-            ),
+            ("这只苹果有半公斤。".into(), "Zhè zhī píngguǒ yǒu bàn gōngjīn.".into()),
             ("".into(), "".into()),
-            (
-                "她正在打电话。".into(),
-                "Tā zhèngzài dǎ diànhuà.".into(),
-            ),
+            ("她正在打电话。".into(), "Tā zhèngzài dǎ diànhuà.".into()),
         ],
         chinese,
     )

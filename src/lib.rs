@@ -11,10 +11,7 @@ use dict_context::DictContext;
 mod llm;
 
 #[component]
-pub fn InputField(
-    #[prop(into)] value: Signal<String>,
-    #[prop(into)] set_value: WriteSignal<String>,
-) -> impl IntoView {
+pub fn InputField(#[prop(into)] value: Signal<String>, #[prop(into)] set_value: WriteSignal<String>) -> impl IntoView {
     view! {
         <input
             type="text"
@@ -67,7 +64,7 @@ pub fn Translation(#[prop(into)] input: Signal<String>) -> impl IntoView {
     let translation = create_local_resource(
         move || input.get(),
         |text| async move {
-            llm::translate(text)
+            llm::chinese_to_english(text)
                 .await
                 .unwrap_or_else(|err| format!("Error querying AI for translation: {err:?}"))
         },
@@ -227,19 +224,13 @@ mod ssr_imports {
     }
 
     #[event(fetch)]
-    async fn fetch(
-        req: HttpRequest,
-        env: Env,
-        _ctx: Context,
-    ) -> Result<axum::http::Response<axum::body::Body>> {
+    async fn fetch(req: HttpRequest, env: Env, _ctx: Context) -> Result<axum::http::Response<axum::body::Body>> {
         _ = console_log::init_with_level(log::Level::Debug);
         use tower_service::Service;
 
         console_error_panic_hook::set_once();
 
-        let api_key = env
-            .secret("OPENAI_API_KEY")
-            .expect("OPENAI_API_KEY must be set");
+        let api_key = env.secret("OPENAI_API_KEY").expect("OPENAI_API_KEY must be set");
         llm::set_api_key(api_key.to_string());
 
         Ok(router().call(req).await?)
