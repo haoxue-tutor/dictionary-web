@@ -37,8 +37,11 @@ pub async fn query_openai(
 
         let request = CreateChatCompletionRequestArgs::default()
             .max_tokens(128_u16)
+            .temperature(0.0) // Set temperature to zero
             // .model("qwen/qwen-2-7b-instruct:free")
-            .model("qwen/qwen-2-7b-instruct")
+            // .model("qwen/qwen-2-7b-instruct")
+            .model("openai/gpt-4o-mini")
+            // .model("qwen/qwen-2-72b-instruct")
             // .model("nousresearch/hermes-3-llama-3.1-405b")
             .messages(messages)
             .build()
@@ -69,6 +72,21 @@ pub async fn chinese_to_english(chinese: String) -> Result<String, ServerFnError
     .await
 }
 
+// English to Chinese translation
+pub async fn english_to_chinese(english: String) -> Result<String, ServerFnError> {
+    query_openai(
+        "You are an English to Chinese translation system. You will respond only with translations.".to_string(),
+        vec![
+            ("Which book do you need?".into(), "你需要哪本书？".into()),
+            ("This apple weighs half a kilogram.".into(), "这只苹果有半公斤。".into()),
+            ("".into(), "".into()),
+            ("She is making a phone call.".into(), "她正在打电话。".into()),
+        ],
+        english,
+    )
+    .await
+}
+
 // Chinese to Pinyin translation
 pub async fn chinese_to_pinyin(chinese: String) -> Result<String, ServerFnError> {
     query_openai(
@@ -80,6 +98,21 @@ pub async fn chinese_to_pinyin(chinese: String) -> Result<String, ServerFnError>
             ("她正在打电话。".into(), "Tā zhèngzài dǎ diànhuà.".into()),
         ],
         chinese,
+    )
+    .await
+}
+
+// Pinyin to Chinese translation
+pub async fn pinyin_to_chinese(pinyin: String) -> Result<String, ServerFnError> {
+    query_openai(
+        "You are a Pinyin to Chinese translation system. You will respond only with Chinese translations.".to_string(),
+        vec![
+            ("Nǐ xūyào nǎ běn shū?".into(), "你需要哪本书？".into()),
+            ("Zhè zhī píngguǒ yǒu bàn gōngjīn.".into(), "这只苹果有半公斤。".into()),
+            ("".into(), "".into()),
+            ("Tā zhèngzài dǎ diànhuà.".into(), "她正在打电话。".into()),
+        ],
+        pinyin,
     )
     .await
 }
