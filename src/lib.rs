@@ -1,5 +1,5 @@
 use haoxue_dict::DictEntry;
-use leptos::{component, create_signal, view, IntoView, SignalGet, SignalSet};
+use leptos::{component, view, IntoView, SignalGet, SignalSet};
 use leptos_meta::*;
 
 use leptos::*;
@@ -11,16 +11,25 @@ use dict_context::DictContext;
 mod llm;
 
 #[component]
-pub fn InputField(#[prop(into)] value: Signal<String>, #[prop(into)] set_value: WriteSignal<String>) -> impl IntoView {
+pub fn SourceField<A: Clone + 'static>(
+    #[prop(into)] src: RwSignal<Source>,
+    pack: fn(String) -> Source,
+    unpack: fn(&Source) -> Option<String>,
+    resource: Resource<A, String>,
+) -> impl IntoView {
+    let source_str = move || src.with(unpack).unwrap_or_else(|| resource.get().unwrap_or_default());
     view! {
-        <input
-            type="text"
-            value=value
-            on:input=move |ev| {
-                set_value.set(event_target_value(&ev));
-            }
-            class="w-full mx-2 my-1 px-2 py-1 border border-gray-300"
-        />
+        <p>
+            <input
+                type="text"
+                prop:value=source_str
+                on:input=move |ev| {
+                    src.set(pack(event_target_value(&ev)));
+                }
+                class="w-1/2 mx-2 my-1 px-2 py-1 border border-gray-300"
+            />
+            {move || view! { <span class:loader=resource.loading().get() && src.with(unpack).is_none()></span> }}
+        </p>
     }
 }
 
@@ -66,68 +75,100 @@ pub fn WordList(#[prop(into)] words: Signal<String>) -> impl IntoView {
     }
 }
 
-#[component]
-pub fn Translation(#[prop(into)] input: Signal<String>) -> impl IntoView {
-    let translation = create_local_resource(
-        move || input.get(),
-        |text| async move {
-            llm::chinese_to_english(text)
-                .await
-                .unwrap_or_else(|err| format!("Error querying AI for translation: {err:?}"))
-        },
-    );
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Source {
+    Chinese(String),
+    English(String),
+    Pinyin(String),
+}
 
-    view! {
-        <div>
-            <p>
-                {move || translation.get()} {move || view! { <span class:loader=translation.loading().get()></span> }}
-            </p>
-        </div>
+impl ToString for Source {
+    fn to_string(&self) -> String {
+        match self {
+            Source::Chinese(text) => text.clone(),
+            Source::English(text) => text.clone(),
+            Source::Pinyin(text) => text.clone(),
+        }
     }
 }
 
-#[component]
-pub fn Pinyin(#[prop(into)] input: Signal<String>) -> impl IntoView {
-    let translation = create_local_resource(
-        move || input.get(),
-        |text| async move {
-            llm::chinese_to_pinyin(text)
-                .await
-                .unwrap_or_else(|err| format!("Error querying AI for translation: {err:?}"))
-        },
-    );
+impl Source {
+    fn get_chinese(&self) -> Option<String> {
+        match self {
+            Source::Chinese(text) => Some(text.clone()),
+            _ => None,
+        }
+    }
 
-    view! {
-        <div>
-            <p>
-                {move || translation.get()} {move || view! { <span class:loader=translation.loading().get()></span> }}
-            </p>
-        </div>
+    fn get_english(&self) -> Option<String> {
+        match self {
+            Source::English(text) => Some(text.clone()),
+            _ => None,
+        }
+    }
+
+    fn get_pinyin(&self) -> Option<String> {
+        match self {
+            Source::Pinyin(text) => Some(text.clone()),
+            _ => None,
+        }
     }
 }
 
 #[component]
 pub fn Dictionary() -> impl IntoView {
-    let (input, set_input) = create_signal(String::from("我忘记带钥匙了。"));
-    let input_throttled = signal_throttled(input, 2000.0);
+    let source = create_rw_signal(Source::Chinese(String::from("我忘记带钥匙了。")));
+    let source_throttled = signal_debounced(source, 1000.0);
+
+    let chinese_resource = create_local_resource(
+        move || source_throttled.get(),
+        |src| async move {
+            log::debug!("chinese src: {:?}", src);
+            match src {
+                Source::Chinese(txt) => txt,
+                Source::English(txt) => llm::english_to_chinese(txt).await.unwrap_or_default(),
+                Source::Pinyin(txt) => llm::pinyin_to_chinese(txt).await.unwrap_or_default(),
+            }
+        },
+    );
+
+    let english_resource = create_local_resource(
+        move || chinese_resource.get().unwrap_or_default(),
+        move |chin| async move {
+            match source.get() {
+                Source::English(txt) => txt,
+                _ => llm::chinese_to_english(chin).await.unwrap_or_default(),
+            }
+        },
+    );
+
+    let pinyin_resource = create_local_resource(
+        move || chinese_resource.get().unwrap_or_default(),
+        move |chin| async move {
+            match source.get() {
+                Source::Pinyin(txt) => txt,
+                _ => llm::chinese_to_pinyin(chin).await.unwrap_or_default(),
+            }
+        },
+    );
 
     view! {
         <fieldset class="border border-black border-dashed p-2">
             <legend>Chinese</legend>
-            <InputField value=input set_value=set_input />
+            <SourceField src=source unpack=Source::get_chinese pack=Source::Chinese resource=chinese_resource />
         </fieldset>
         <fieldset class="border border-black border-dashed p-2">
             <legend>Pinyin</legend>
-            <Pinyin input=input_throttled />
+            <SourceField src=source unpack=Source::get_pinyin pack=Source::Pinyin resource=pinyin_resource />
         </fieldset>
         <fieldset class="border border-black border-dashed p-2">
             <legend>English</legend>
-            <Translation input=input_throttled />
+            <SourceField src=source unpack=Source::get_english pack=Source::English resource=english_resource />
         </fieldset>
-        <fieldset class="border border-black border-dashed p-2">
-            <legend>Words</legend>
-            <WordList words=input />
-        </fieldset>
+        // <fieldset class="border border-black border-dashed p-2">
+        //     <legend>Words</legend>
+        // // <WordList words=chinese />
+        // </fieldset>
     }
 }
 
