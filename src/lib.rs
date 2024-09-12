@@ -34,14 +34,14 @@ pub fn SourceField<A: Clone + 'static>(
 }
 
 #[component]
-pub fn WordList(#[prop(into)] words: Signal<String>) -> impl IntoView {
+pub fn WordList(words: impl Fn() -> String + 'static) -> impl IntoView {
     view! {
         <ul>
             <For
                 each=move || {
                     let dict = DictContext::use_context().get();
                     if let Some(dict) = dict {
-                        dict.segment(&words.get())
+                        dict.segment(&words())
                             .into_iter()
                             .map(|either| either.right_or_else(DictEntry::simplified).to_string())
                             .collect::<Vec<_>>()
@@ -80,16 +80,6 @@ pub enum Source {
     Chinese(String),
     English(String),
     Pinyin(String),
-}
-
-impl ToString for Source {
-    fn to_string(&self) -> String {
-        match self {
-            Source::Chinese(text) => text.clone(),
-            Source::English(text) => text.clone(),
-            Source::Pinyin(text) => text.clone(),
-        }
-    }
 }
 
 impl Source {
@@ -167,7 +157,7 @@ pub fn Dictionary() -> impl IntoView {
         </fieldset>
         <fieldset class="border border-black border-dashed p-2">
             <legend>Words</legend>
-            <WordList words=chinese />
+            <WordList words=move || chinese_resource.get().unwrap_or_default() />
         </fieldset>
     }
 }
