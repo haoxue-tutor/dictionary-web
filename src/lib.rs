@@ -165,10 +165,10 @@ pub fn Dictionary() -> impl IntoView {
             <legend>English</legend>
             <SourceField src=source unpack=Source::get_english pack=Source::English resource=english_resource />
         </fieldset>
-        // <fieldset class="border border-black border-dashed p-2">
-        //     <legend>Words</legend>
-        // // <WordList words=chinese />
-        // </fieldset>
+        <fieldset class="border border-black border-dashed p-2">
+            <legend>Words</legend>
+            <WordList words=chinese />
+        </fieldset>
     }
 }
 
