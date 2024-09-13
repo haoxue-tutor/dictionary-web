@@ -1,6 +1,6 @@
-- Stream translation response?
-- Generate Pinyin.
-- Allow Pinyin and English to be edited.
 - Toggle light-dark mode.
 - Write tool that uploads everything in pkg/ to CF KV. Then a manifest can be
   stored in the server, and static files are served directly from KV.
+- Use a free AI to select the best entry in the dictionary for each word.
+- Add toggle to disable all AI.
+- Figure out a more robust CloudFlare deployment dry-run.
