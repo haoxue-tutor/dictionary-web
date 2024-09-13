@@ -2,7 +2,7 @@ name = "dictionary-web"
 main = "build/worker/shim.mjs"
 compatibility_date = "2024-07-13"
 
-routes = [{ pattern = "dict.lemmih.org", zone_name = "lemmih.org", custom_domain = true }]
+routes = [{ pattern = "dict.erudify.org", zone_name = "erudify.org", custom_domain = true }]
 
 [build]
 command = """
