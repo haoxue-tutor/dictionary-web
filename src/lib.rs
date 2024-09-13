@@ -267,13 +267,11 @@ mod ssr_imports {
             Ok(api_key) => {
                 llm::set_api_key(api_key.to_string());
                 Ok(router().call(req).await?)
-            },
-            Err(_) => {
-                Ok(axum::http::Response::builder()
-                    .status(StatusCode::INTERNAL_SERVER_ERROR)
-                    .body(axum::body::Body::from("Website is misconfigured: AI key is missing"))
-                    .unwrap())
             }
+            Err(_) => Ok(axum::http::Response::builder()
+                .status(StatusCode::INTERNAL_SERVER_ERROR)
+                .body(axum::body::Body::from("Website is misconfigured: AI key is missing"))
+                .unwrap()),
         }
     }
 }
