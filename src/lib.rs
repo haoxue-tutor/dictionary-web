@@ -263,9 +263,15 @@ mod ssr_imports {
 
         console_error_panic_hook::set_once();
 
-        let api_key = env.secret("OPENAI_API_KEY").expect("OPENAI_API_KEY must be set");
-        llm::set_api_key(api_key.to_string());
-
-        Ok(router().call(req).await?)
+        match env.secret("OPENAI_API_KEY") {
+            Ok(api_key) => {
+                llm::set_api_key(api_key.to_string());
+                Ok(router().call(req).await?)
+            }
+            Err(_) => Ok(axum::http::Response::builder()
+                .status(StatusCode::INTERNAL_SERVER_ERROR)
+                .body(axum::body::Body::from("Website is misconfigured: AI key is missing"))
+                .unwrap()),
+        }
     }
 }
