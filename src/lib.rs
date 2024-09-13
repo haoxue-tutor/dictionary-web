@@ -58,15 +58,16 @@ pub fn WordList(words: impl Fn() -> String + 'static) -> impl IntoView {
                         if let Some(dict) = dict {
                             if let Some(entry) = dict.get_entry(&word) {
                                 view! {
-                                    {word}
+                                    <span lang="zh">{word}</span>
+                                    {" "}
                                     {entry.definitions().next().unwrap_or_default().to_string()}
                                 }
                                     .into_view()
                             } else {
-                                view! { {word} }.into_view()
+                                view! { <span lang="zh">{word}</span> }.into_view()
                             }
                         } else {
-                            view! { {word} }.into_view()
+                            view! { <span lang="zh">{word}</span> }.into_view()
                         }
                     }}
                 </li>

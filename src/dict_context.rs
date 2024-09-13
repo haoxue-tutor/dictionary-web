@@ -12,7 +12,7 @@ impl DictContext {
         let resource = create_local_resource(
             || (),
             |_| async move {
-                let url = "https://assets.lemmih.org/cedict-2024-06-07.txt";
+                let url = "https://assets.erudify.org/cedict-2024-06-07.txt";
                 let client = reqwest::Client::new();
                 let response = client.get(url).send().await.unwrap();
 
@@ -23,7 +23,7 @@ impl DictContext {
                     file_content.len() as f64 / (1024.0 * 1024.0)
                 );
 
-                let url = "https://assets.lemmih.org/SUBTLEX-CH-WF.utf8.txt";
+                let url = "https://assets.erudify.org/SUBTLEX-CH-WF.utf8.txt";
                 let subtlex_content = reqwest::get(url).await.unwrap().text().await.unwrap();
 
                 use instant::Instant;
