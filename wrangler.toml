@@ -4,6 +4,10 @@ compatibility_date = "2024-07-13"
 
 routes = [{ pattern = "dict.erudify.org", zone_name = "erudify.org", custom_domain = true }]
 
+kv_namespaces = [
+    { binding = "LLM_CACHE", id = "33dcdf22984a414bb530a611e3032e20", preview_id = "33dcdf22984a414bb530a611e3032e20" },
+]
+
 [build]
 command = """
 mkdir -p pkg &&

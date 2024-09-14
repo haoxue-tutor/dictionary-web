@@ -1,3 +1,5 @@
+#[cfg(feature = "ssr")]
+use async_openai_wasm::types::*;
 use leptos::*;
 #[cfg(feature = "ssr")]
 use std::sync::OnceLock;
@@ -10,14 +12,21 @@ pub fn set_api_key(api_key: String) {
     let _ = API_KEY.set(api_key);
 }
 
+#[cfg(feature = "ssr")]
+static LLM_CACHE: OnceLock<worker_kv::KvStore> = OnceLock::new();
+
+#[cfg(feature = "ssr")]
+pub fn set_llm_cache(env: &worker::Env) {
+    let kv = env.kv("LLM_CACHE").expect("LLM_CACHE must be set");
+    let _ = LLM_CACHE.set(kv);
+}
+
 #[server]
 pub async fn query_openai(
     system: String,
     history: Vec<(String, String)>,
     prompt: String,
 ) -> Result<String, ServerFnError> {
-    use async_openai_wasm::{config::OpenAIConfig, types::*, Client};
-
     use send_wrapper::SendWrapper;
 
     let mut messages: Vec<ChatCompletionRequestMessage> = vec![];
@@ -28,33 +37,15 @@ pub async fn query_openai(
     }
     messages.push(ChatCompletionRequestUserMessage::from(prompt).into());
 
-    SendWrapper::new(async move {
-        let api_key = API_KEY.get().expect("OPENAI_API_KEY must be set");
-        let config = OpenAIConfig::new()
-            .with_api_key(api_key)
-            .with_api_base("https://openrouter.ai/api/v1");
-        let client = Client::with_config(config);
+    let request = CreateChatCompletionRequestArgs::default()
+        .max_tokens(128_u16)
+        .temperature(0.0)
+        .model("openai/gpt-4o-mini")
+        .messages(messages)
+        .build()
+        .unwrap();
 
-        let request = CreateChatCompletionRequestArgs::default()
-            .max_tokens(128_u16)
-            .temperature(0.0) // Set temperature to zero
-            // .model("qwen/qwen-2-7b-instruct:free")
-            // .model("qwen/qwen-2-7b-instruct")
-            .model("openai/gpt-4o-mini")
-            // .model("qwen/qwen-2-72b-instruct")
-            // .model("nousresearch/hermes-3-llama-3.1-405b")
-            .messages(messages)
-            .build()
-            .unwrap();
-
-        let response = client.chat().create(request).await?;
-        let choice = response.choices.first().ok_or(std::io::Error::new(
-            std::io::ErrorKind::NotFound,
-            "Received empty set of choices",
-        ))?;
-        Ok(choice.message.content.clone().unwrap_or_default())
-    })
-    .await
+    SendWrapper::new(cached_query_openai(request)).await
 }
 
 // Chinese to English translation
@@ -115,4 +106,55 @@ pub async fn pinyin_to_chinese(pinyin: String) -> Result<String, ServerFnError> 
         pinyin,
     )
     .await
+}
+
+#[cfg(feature = "ssr")]
+pub async fn cached_query_openai(request: CreateChatCompletionRequest) -> Result<String, ServerFnError> {
+    const CACHE_TTL: u64 = 24 * 60 * 60; // 1 day in seconds
+    use async_openai_wasm::{config::OpenAIConfig, Client};
+
+    let kv = LLM_CACHE.get().expect("LLM_CACHE must be set");
+    let cache_key = {
+        use ahash::AHasher;
+        use std::hash::{Hash, Hasher};
+        let json = serde_json::to_string(&request)?;
+        let mut hasher = AHasher::default();
+        json.hash(&mut hasher);
+        format!("{:x}", hasher.finish())
+    };
+
+    // Check if the response is cached
+    let start_time = instant::Instant::now();
+    let cached_result = kv.get(&cache_key).cache_ttl(CACHE_TTL).text().await?;
+    let duration = start_time.elapsed();
+    log::info!("Time taken to query cache: {:?}", duration);
+
+    if let Some(cached) = cached_result {
+        return Ok(cached);
+    }
+
+    // If not cached, make the API call
+    let api_key = API_KEY.get().expect("OPENAI_API_KEY must be set");
+    let config = OpenAIConfig::new()
+        .with_api_key(api_key)
+        .with_api_base("https://openrouter.ai/api/v1");
+    let client = Client::with_config(config);
+
+    let response = client.chat().create(request.clone()).await?;
+    let choice = response.choices.first().ok_or(std::io::Error::new(
+        std::io::ErrorKind::NotFound,
+        "Received empty set of choices",
+    ))?;
+    let content = choice.message.content.clone().unwrap_or_default();
+
+    // Cache the response
+    let start_time = instant::Instant::now();
+    kv.put(&cache_key, content.clone())?
+        .expiration_ttl(CACHE_TTL)
+        .execute()
+        .await?;
+    let duration = start_time.elapsed();
+    log::info!("Time taken to cache response: {:?}", duration);
+
+    Ok(content)
 }

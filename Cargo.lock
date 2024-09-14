@@ -616,6 +616,7 @@ dependencies = [
 name = "dictionary-web"
 version = "0.1.0"
 dependencies = [
+ "ahash",
  "async-openai-wasm",
  "axum",
  "console_error_panic_hook",
@@ -643,6 +644,7 @@ dependencies = [
  "wasm-bindgen-futures",
  "web-sys",
  "worker",
+ "worker-kv",
  "worker-macros",
 ]
 
