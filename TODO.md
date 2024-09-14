@@ -4,3 +4,6 @@
 - Use a free AI to select the best entry in the dictionary for each word.
 - Add toggle to disable all AI.
 - Figure out a more robust CloudFlare deployment dry-run.
+- Use KV to cache LLM responses.
+- Redirect from http to https.
+- Visual indicator to show when data is out of date.
