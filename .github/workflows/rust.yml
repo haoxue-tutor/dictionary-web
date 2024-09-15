@@ -18,7 +18,7 @@ jobs:
     - uses: actions/checkout@v4
     - name: Setup environment
       run: |
-        cargo install --locked leptosfmt
+        cargo install --locked leptosfmt --version 0.1.31
         mkdir pkg
     - name: Format
       run: |
