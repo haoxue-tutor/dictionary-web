@@ -68,6 +68,8 @@ mod ssr_imports {
 
         console_error_panic_hook::set_once();
 
+        llm::set_llm_cache(&env);
+
         match env.secret("OPENAI_API_KEY") {
             Ok(api_key) => {
                 llm::set_api_key(api_key.to_string());
