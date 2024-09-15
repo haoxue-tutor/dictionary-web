@@ -27,10 +27,7 @@ pub fn SourceField<A: Clone + 'static>(
                 class="w-1/2 mx-2 my-1 px-2 py-1 border border-gray-300"
             />
             {move || {
-                view! {
-                    <span class:loader=resource.loading().get()
-                        && src.with(unpack).is_none()></span>
-                }
+                view! { <span class:loader=resource.loading().get() && src.with(unpack).is_none()></span> }
             }}
         </p>
     }
@@ -149,30 +146,15 @@ pub fn Dictionary() -> impl IntoView {
     view! {
         <fieldset class="border border-black border-dashed p-2">
             <legend>Chinese</legend>
-            <SourceField
-                src=source
-                unpack=Source::get_chinese
-                pack=Source::Chinese
-                resource=chinese_resource
-            />
+            <SourceField src=source unpack=Source::get_chinese pack=Source::Chinese resource=chinese_resource />
         </fieldset>
         <fieldset class="border border-black border-dashed p-2">
             <legend>Pinyin</legend>
-            <SourceField
-                src=source
-                unpack=Source::get_pinyin
-                pack=Source::Pinyin
-                resource=pinyin_resource
-            />
+            <SourceField src=source unpack=Source::get_pinyin pack=Source::Pinyin resource=pinyin_resource />
         </fieldset>
         <fieldset class="border border-black border-dashed p-2">
             <legend>English</legend>
-            <SourceField
-                src=source
-                unpack=Source::get_english
-                pack=Source::English
-                resource=english_resource
-            />
+            <SourceField src=source unpack=Source::get_english pack=Source::English resource=english_resource />
         </fieldset>
         <fieldset class="border border-black border-dashed p-2">
             <legend>Words</legend>
@@ -187,8 +169,7 @@ pub fn FileDownloader() -> impl IntoView {
 
     view! {
         <Suspense fallback=move || {
-            view! { <p>Please wait, loading dictionary <span class:loader=true></span></p> }
-                .into_view()
+            view! { <p>Please wait, loading dictionary <span class:loader=true></span></p> }.into_view()
         }>
             <div>
                 {move || {
