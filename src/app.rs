@@ -143,6 +143,13 @@ pub fn Dictionary() -> impl IntoView {
         },
     );
 
+    let chinese_memo = create_memo(move |_| {
+        source
+            .get()
+            .get_chinese()
+            .unwrap_or(chinese_resource.get().unwrap_or_default())
+    });
+
     view! {
         <fieldset class="border border-black border-dashed p-2">
             <legend>Chinese</legend>
@@ -158,7 +165,7 @@ pub fn Dictionary() -> impl IntoView {
         </fieldset>
         <fieldset class="border border-black border-dashed p-2">
             <legend>Words</legend>
-            <WordList words=move || chinese_resource.get().unwrap_or_default() />
+            <WordList words=move || chinese_memo.get() />
         </fieldset>
     }
 }
