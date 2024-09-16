@@ -4,14 +4,14 @@ use std::sync::Arc;
 
 #[derive(Clone, Copy)]
 pub struct DictContext {
-    resource: Resource<(), Arc<Dictionary>>,
+    signal: Signal<Option<Arc<Dictionary>>>,
 }
 
 impl DictContext {
     fn new() -> Self {
-        let resource = create_local_resource(
-            || (),
-            |_| async move {
+        let (signal, set_signal) = create_signal(None);
+        if !cfg!(feature = "ssr") {
+            spawn_local(async move {
                 let url = "https://assets.erudify.org/cedict-2024-06-07.txt";
                 let client = reqwest::Client::new();
                 let response = client.get(url).send().await.unwrap();
@@ -35,13 +35,18 @@ impl DictContext {
                 );
                 let duration = start_time.elapsed();
                 log::info!("Time taken to create dictionary: {:.2?}", duration);
-                Arc::new(new_dict)
-            },
-        );
-        Self { resource }
+
+                set_signal.set(Some(Arc::new(new_dict)));
+            });
+        }
+        Self { signal: signal.into() }
     }
     pub fn get(&self) -> Option<Arc<Dictionary>> {
-        self.resource.get()
+        self.signal.get()
+    }
+
+    pub fn loading(&self) -> bool {
+        self.signal.try_get().flatten().is_none()
     }
 
     pub fn provide_context() {
