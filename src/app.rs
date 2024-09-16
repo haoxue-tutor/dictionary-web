@@ -193,7 +193,7 @@ pub fn AppWithFallback() -> impl IntoView {
     view! {
         <p
             class="text-center font-bold text-2xl h-96 flex items-center justify-center"
-            class:hidden=move || !dict.loading()
+            class=("hidden", move || !dict.loading())
         >
             Please wait, loading dictionary
             <span class:loader=true></span>
