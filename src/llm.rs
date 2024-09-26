@@ -1,25 +1,6 @@
 #[cfg(feature = "ssr")]
 use async_openai_wasm::types::*;
 use leptos::*;
-#[cfg(feature = "ssr")]
-use std::sync::OnceLock;
-
-#[cfg(feature = "ssr")]
-static API_KEY: OnceLock<String> = OnceLock::new();
-
-#[cfg(feature = "ssr")]
-pub fn set_api_key(api_key: String) {
-    let _ = API_KEY.set(api_key);
-}
-
-#[cfg(feature = "ssr")]
-static LLM_CACHE: OnceLock<worker_kv::KvStore> = OnceLock::new();
-
-#[cfg(feature = "ssr")]
-pub fn set_llm_cache(env: &worker::Env) {
-    let kv = env.kv("LLM_CACHE").expect("LLM_CACHE must be set");
-    let _ = LLM_CACHE.set(kv);
-}
 
 #[server]
 pub async fn query_openai(
@@ -113,7 +94,15 @@ pub async fn cached_query_openai(request: CreateChatCompletionRequest) -> Result
     const CACHE_TTL: u64 = 24 * 60 * 60; // 1 day in seconds
     use async_openai_wasm::{config::OpenAIConfig, Client};
 
-    let kv = LLM_CACHE.get().expect("LLM_CACHE must be set");
+    use axum::Extension;
+    use leptos_axum::extract;
+    use std::sync::Arc;
+    use worker::Env;
+
+    let Extension(env): Extension<Arc<Env>> = extract().await?;
+
+    let kv = env.kv("LLM_CACHE").expect("LLM_CACHE must be set");
+
     let cache_key = {
         use ahash::AHasher;
         use std::hash::{Hash, Hasher};
@@ -134,7 +123,11 @@ pub async fn cached_query_openai(request: CreateChatCompletionRequest) -> Result
     }
 
     // If not cached, make the API call
-    let api_key = API_KEY.get().expect("OPENAI_API_KEY must be set");
+    let api_key = env
+        .secret("OPENAI_API_KEY")
+        .expect("OPENAI_API_KEY must be set")
+        .to_string();
+
     let config = OpenAIConfig::new()
         .with_api_key(api_key)
         .with_api_base("https://openrouter.ai/api/v1");
