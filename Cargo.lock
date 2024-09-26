@@ -286,9 +286,9 @@ checksum = "47de7e88bbbd467951ae7f5a6f34f70d1b4d9cfce53d5fd70f74ebe118b3db56"
 
 [[package]]
 name = "cedict"
-version = "0.3.1"
+version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a5062aba4a92a900a13d893d8cafeb4c93d1016c8a509b0a1afeab698c193301"
+checksum = "bfba99280ef3b2c43719fd33a3bc17d6231be6304449586898b67bc484d1338d"
 
 [[package]]
 name = "cfg-if"
@@ -619,8 +619,10 @@ dependencies = [
  "ahash",
  "async-openai-wasm",
  "axum",
+ "cedict",
  "console_error_panic_hook",
  "console_log",
+ "either",
  "enum-as-inner",
  "futures-util",
  "gloo-timers",

@@ -28,7 +28,11 @@ serde = "1.0.210"
 wasm-bindgen-futures = "0.4.43"
 reqwest = { version = "0.12.7", features = ["stream"] }
 futures-util = "0.3.30"
-web-sys = { version = "0.3.70", features = ["Storage", "Navigator", "StorageManager"] }
+web-sys = { version = "0.3.70", features = [
+  "Storage",
+  "Navigator",
+  "StorageManager",
+] }
 haoxue-dict = { version = "0.1.7", default-features = false }
 instant = { version = "0.1.13", features = ["wasm-bindgen"] }
 async-openai-wasm = "0.24.0"
@@ -39,6 +43,8 @@ gloo-timers = "0.3.0"
 worker-kv = "0.7.0"
 ahash = { version = "0.8.11", default-features = false }
 enum-as-inner = "0.6.1"
+cedict = "0.3.2"
+either = "1.13.0"
 
 [features]
 hydrate = ["leptos/hydrate", "leptos_meta/hydrate", "leptos_router/hydrate"]
