@@ -8,14 +8,19 @@ use leptos_use::*;
 use crate::dict_context::DictContext;
 use crate::llm;
 
+use enum_as_inner::EnumAsInner;
+
 #[component]
 pub fn SourceField<A: Clone + 'static>(
     #[prop(into)] src: RwSignal<Source>,
     pack: fn(String) -> Source,
-    unpack: fn(&Source) -> Option<String>,
+    unpack: fn(&Source) -> Option<&String>,
     resource: Resource<A, String>,
 ) -> impl IntoView {
-    let source_str = move || src.with(unpack).unwrap_or_else(|| resource.get().unwrap_or_default());
+    let source_str = move || {
+        src.with(|src| unpack(src).cloned())
+            .unwrap_or_else(|| resource.get().unwrap_or_default())
+    };
     view! {
         <p class="mx-2 mb-1">
             <input
@@ -73,34 +78,11 @@ pub fn WordList(words: impl Fn() -> String + Copy + 'static) -> impl IntoView {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, EnumAsInner)]
 pub enum Source {
     Chinese(String),
     English(String),
     Pinyin(String),
-}
-
-impl Source {
-    fn get_chinese(&self) -> Option<String> {
-        match self {
-            Source::Chinese(text) => Some(text.clone()),
-            _ => None,
-        }
-    }
-
-    fn get_english(&self) -> Option<String> {
-        match self {
-            Source::English(text) => Some(text.clone()),
-            _ => None,
-        }
-    }
-
-    fn get_pinyin(&self) -> Option<String> {
-        match self {
-            Source::Pinyin(text) => Some(text.clone()),
-            _ => None,
-        }
-    }
 }
 
 #[component]
@@ -145,7 +127,8 @@ pub fn Dictionary() -> impl IntoView {
     let chinese_memo = create_memo(move |_| {
         source
             .get()
-            .get_chinese()
+            .as_chinese()
+            .cloned()
             .unwrap_or(chinese_resource.get().unwrap_or_default())
     });
 
@@ -158,7 +141,7 @@ pub fn Dictionary() -> impl IntoView {
                 }}
             </dt>
             <dd class="mb-4">
-                <SourceField src=source unpack=Source::get_chinese pack=Source::Chinese resource=chinese_resource />
+                <SourceField src=source unpack=Source::as_chinese pack=Source::Chinese resource=chinese_resource />
             </dd>
             <dt class="font-bold">
                 Pinyin
@@ -167,7 +150,7 @@ pub fn Dictionary() -> impl IntoView {
                 }}
             </dt>
             <dd class="mb-4">
-                <SourceField src=source unpack=Source::get_pinyin pack=Source::Pinyin resource=pinyin_resource />
+                <SourceField src=source unpack=Source::as_pinyin pack=Source::Pinyin resource=pinyin_resource />
             </dd>
             <dt class="font-bold">
                 English
@@ -176,7 +159,7 @@ pub fn Dictionary() -> impl IntoView {
                 }}
             </dt>
             <dd class="mb-4">
-                <SourceField src=source unpack=Source::get_english pack=Source::English resource=english_resource />
+                <SourceField src=source unpack=Source::as_english pack=Source::English resource=english_resource />
             </dd>
         </dl>
         <fieldset class="border border-black border-dashed p-2">
