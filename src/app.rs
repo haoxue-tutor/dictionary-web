@@ -1,4 +1,3 @@
-use haoxue_dict::DictEntry;
 use leptos::{component, view, IntoView, SignalGet, SignalSet};
 use leptos_meta::*;
 
@@ -8,6 +7,7 @@ use leptos_use::*;
 use crate::dict_context::DictContext;
 use crate::llm;
 
+use either::Either;
 use enum_as_inner::EnumAsInner;
 
 #[component]
@@ -45,7 +45,7 @@ pub fn WordList(words: impl Fn() -> String + Copy + 'static) -> impl IntoView {
                     if let Some(dict) = dict {
                         dict.segment(&words())
                             .into_iter()
-                            .map(|either| either.right_or_else(DictEntry::simplified).to_string())
+                            .map(|either| either.map_either(|s| s.clone(), |s| s.to_string()))
                             .collect::<Vec<_>>()
                     } else {
                         vec![]
@@ -56,20 +56,16 @@ pub fn WordList(words: impl Fn() -> String + Copy + 'static) -> impl IntoView {
             >
                 <li>
                     {{
-                        let dict = DictContext::use_context().get();
-                        if let Some(dict) = dict {
-                            if let Some(entry) = dict.get_entry(&word) {
+                        match word {
+                            Either::Left(entry) => {
                                 view! {
-                                    <span lang="zh">{word}</span>
+                                    <span lang="zh">{entry.simplified().to_string()}</span>
                                     {" "}
                                     {entry.definitions().next().unwrap_or_default().to_string()}
                                 }
                                     .into_view()
-                            } else {
-                                view! { <span lang="zh">{word}</span> }.into_view()
                             }
-                        } else {
-                            view! { <span lang="zh">{word}</span> }.into_view()
+                            Either::Right(word) => view! { <span lang="zh">{word}</span> }.into_view(),
                         }
                     }}
                 </li>
