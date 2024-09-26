@@ -38,6 +38,7 @@ leptos-use = { version = "0.13.5", features = ["watch_throttled"] }
 gloo-timers = "0.3.0"
 worker-kv = "0.7.0"
 ahash = { version = "0.8.11", default-features = false }
+enum-as-inner = "0.6.1"
 
 [features]
 hydrate = ["leptos/hydrate", "leptos_meta/hydrate", "leptos_router/hydrate"]
