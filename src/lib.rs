@@ -18,11 +18,12 @@ mod ssr_imports {
         extract::Path,
         response::IntoResponse,
         routing::{get, post},
-        Router,
+        Extension, Router,
     };
     use include_dir::{include_dir, Dir};
     use leptos::*;
     use leptos_axum::{generate_route_list, LeptosRoutes};
+    use std::sync::Arc;
     use worker::{event, Context, Env, HttpRequest, Result};
 
     static PKG_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/pkg/");
@@ -40,7 +41,7 @@ mod ssr_imports {
         }
     }
 
-    fn router() -> Router {
+    fn router(env: Env) -> Router {
         let leptos_options = LeptosOptions::builder()
             .output_name("client")
             .site_pkg_dir("pkg")
@@ -52,7 +53,8 @@ mod ssr_imports {
             .leptos_routes(&leptos_options, routes, App)
             .route("/api/*fn_name", post(leptos_axum::handle_server_fns))
             .route("/pkg/*file_name", get(serve_static))
-            .with_state(leptos_options);
+            .with_state(leptos_options)
+            .layer(Extension(Arc::new(env)));
         app
     }
 
@@ -68,17 +70,6 @@ mod ssr_imports {
 
         console_error_panic_hook::set_once();
 
-        llm::set_llm_cache(&env);
-
-        match env.secret("OPENAI_API_KEY") {
-            Ok(api_key) => {
-                llm::set_api_key(api_key.to_string());
-                Ok(router().call(req).await?)
-            }
-            Err(_) => Ok(axum::http::Response::builder()
-                .status(StatusCode::INTERNAL_SERVER_ERROR)
-                .body(axum::body::Body::from("Website is misconfigured: AI key is missing"))
-                .unwrap()),
-        }
+        Ok(router(env).call(req).await?)
     }
 }
