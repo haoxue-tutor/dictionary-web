@@ -44,6 +44,7 @@ jobs:
       if: github.ref != 'refs/heads/main'
       uses: cloudflare/wrangler-action@v3
       with:
+        wranglerVersion: "3.78.11"
         apiToken: ${{ secrets.CF_API_TOKEN }}
         command: deploy --dry-run
 
@@ -51,4 +52,5 @@ jobs:
       if: github.ref == 'refs/heads/main'
       uses: cloudflare/wrangler-action@v3
       with:
+        wranglerVersion: "3.78.11"
         apiToken: ${{ secrets.CF_API_TOKEN }}
