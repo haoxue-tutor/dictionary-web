@@ -26,8 +26,8 @@ mime = { version = "0.3.17", optional = true }
 mime_guess = { version = "2.0.5", optional = true }
 serde = "1.0.210"
 wasm-bindgen-futures = "0.4.43"
-reqwest = { version = "0.12.7", features = ["stream"] }
-futures-util = "0.3.30"
+reqwest = { version = "0.12.8", features = ["stream"] }
+futures-util = "0.3.31"
 web-sys = { version = "0.3.70", features = [
   "Storage",
   "Navigator",
