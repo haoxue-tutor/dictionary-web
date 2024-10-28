@@ -8,7 +8,7 @@ authors = ["lemmih <lemmih@gmail.com>"]
 crate-type = ["cdylib"]
 
 [dependencies]
-worker = { version = "0.4.0", features = ['http', 'axum'], optional = true }
+worker = { version = "0.4.2", features = ['http', 'axum'], optional = true }
 worker-macros = { version = "0.4.0", features = ['http'], optional = true }
 tower-service = "0.3.3"
 console_error_panic_hook = { version = "0.1.1" }
@@ -24,10 +24,10 @@ log = "0.4.22"
 include_dir = { version = "0.7.4", optional = true }
 mime = { version = "0.3.17", optional = true }
 mime_guess = { version = "2.0.5", optional = true }
-serde = "1.0.210"
+serde = "1.0.213"
 wasm-bindgen-futures = "0.4.43"
-reqwest = { version = "0.12.7", features = ["stream"] }
-futures-util = "0.3.30"
+reqwest = { version = "0.12.8", features = ["stream"] }
+futures-util = "0.3.31"
 web-sys = { version = "0.3.70", features = [
   "Storage",
   "Navigator",
@@ -36,9 +36,9 @@ web-sys = { version = "0.3.70", features = [
 haoxue-dict = { version = "0.1.7", default-features = false }
 instant = { version = "0.1.13", features = ["wasm-bindgen"] }
 async-openai-wasm = "0.24.0"
-serde_json = "1.0.128"
+serde_json = "1.0.132"
 send_wrapper = "0.6.0"
-leptos-use = { version = "0.13.5", features = ["watch_throttled"] }
+leptos-use = { version = "0.13.6", features = ["watch_throttled"] }
 gloo-timers = "0.3.0"
 worker-kv = "0.7.0"
 ahash = { version = "0.8.11", default-features = false }
